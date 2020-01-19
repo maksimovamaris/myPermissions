@@ -1,77 +1,64 @@
 package com.example.mypermissions;
-
-import androidx.appcompat.app.AppCompatActivity;
-
-import android.content.Context;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
+import android.os.Environment;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import androidx.appcompat.app.AppCompatActivity;
+import java.io.File;
+import java.util.ArrayList;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends AppCompatActivity {
-private EditText text_info;
-private Button save_btn;
-private Button read_btn;
-private String fileName;
-private String info;
-private Context context;
+    private static final String TAG ="tag!" ;
+    private ListView mListView;
+    private File rootDir;
+    private ArrayList<String> file_list;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        text_info=findViewById(R.id.text_info);
-        save_btn=findViewById(R.id.save_btn);
-        read_btn=findViewById(R.id.read_btn);
-        fileName="myFile";
-        context=getApplicationContext();
-        save_btn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                info=text_info.getText().toString();
-                text_info.setText("");
-try (FileOutputStream fos= context.openFileOutput(fileName,Context.MODE_PRIVATE))
-{
-    fos.write(info.getBytes());
-} catch (IOException e)
-{
-   e.printStackTrace();
-}
+        mListView = findViewById(R.id.file_list);
+        if (isExternalStorageWritable()) {
+            rootDir = Environment.getExternalStorageDirectory();
+            file_list = new ArrayList<String>();
+            get_files(rootDir.toString());
+            ArrayAdapter<String> mAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, file_list);
+            mListView.setAdapter(mAdapter);
+        }
+    }
+
+    public void get_files(String dir_name) {
+        File dir=new File(dir_name);
+        File[] fList = dir.listFiles() ;
+//        = getExternalFilesDirs(dir_name);
+//                ContextCompat.getExternalFilesDirs(this, null);
+//        File[] fList=dir.listFiles();
+//        File fileNew = Environment.getExternalStorageDirectory();
+        if (fList != null) {
+            for (File file : fList)
+            {
+                if (file.isFile())
+                {
+                    file_list.add(file.getName().toString());
+                } else if (file.isDirectory())
+                {
+                    get_files(file.getAbsolutePath());
+                }
             }
-        });
-
-read_btn.setOnClickListener(new View.OnClickListener() {
-    @Override
-    public void onClick(View v) {
-        FileInputStream fis= null;
-        try {
-            fis = context.openFileInput(fileName);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+        } else {
+            file_list.add("no files");
         }
-        InputStreamReader inputStreamReader =new InputStreamReader(fis, StandardCharsets.UTF_8);
-        StringBuilder stringBuilder = new StringBuilder();
-        try (BufferedReader reader=new BufferedReader(inputStreamReader))
-        {String line = reader.readLine();
-        while (line!=null)
-        {stringBuilder.append(line).append('\n');
-        line=reader.readLine();
-           }
-            text_info.setText(stringBuilder);
+    }
 
-    } catch (IOException e) {
-            e.printStackTrace();
+    public boolean isExternalStorageWritable() {
+        String state = Environment.getExternalStorageState();
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            return true;
         }
-    }});
+        return false;
+    }
 
-
-}
 }
